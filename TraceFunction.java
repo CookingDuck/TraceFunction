@@ -12,6 +12,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TraceFunction {
     private final Emulator<?> emulator;
@@ -21,6 +23,7 @@ public class TraceFunction {
     private final int arg_len;
     private final int windowSize;
     private final boolean showRets;
+    private final Map<Long, Integer> callCounter = new HashMap<>();
 
     public TraceFunction(Emulator<?> emulator, Module module, String outPutPath) {
         this.emulator = emulator;
@@ -93,12 +96,16 @@ public class TraceFunction {
             @Override
             public void onCall(Emulator<?> emulator, long callerAddress, long functionAddress) {
                 try {
+                    callCounter.put(functionAddress, callCounter.getOrDefault(functionAddress, 0) + 1);
+                    int callCount = callCounter.get(functionAddress);
+
                     StringBuilder pcString = new StringBuilder("          ");
                     pcString.append(registerContext.getPCPointer().toString());
                     while (pcString.length() < 59) {
                         pcString.append(" ");
                     }
                     pcString.append("sub: 0x" + Long.toHexString(functionAddress - module.base));
+                    pcString.append(" [call count: ").append(callCount).append("]"); // 添加调用次数
                     writeFuncToFile(pcString + "\n");
                     for (int i = 0; i < arg_len; i++) {
                         UnidbgPointer args = registerContext.getPointerArg(i);
@@ -123,7 +130,7 @@ public class TraceFunction {
                         while (pcString.length() < 59) {
                             pcString.append(" ");
                         }
-                        pcString.append("call sub: 0x" + Long.toHexString(functionAddress - module.base));
+                        pcString.append("call_by: 0x" + Long.toHexString(functionAddress - module.base));
                         writeFuncToFile(pcString + "\n");
                         if (args != null && args.length > 0) {
                             for (int l = 0; l < args.length; l++) {
@@ -153,7 +160,6 @@ public class TraceFunction {
         });
     }
 
-    // 立即将数据写入文件
     private void writeArgToFile(byte[] data, int args, long baseAddress) {
         Path outputPath = Paths.get(this.outPutPath);
         try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(outputPath, StandardOpenOption.CREATE, StandardOpenOption.APPEND))) {
