@@ -19,15 +19,13 @@ public class TraceFunction {
     private final Emulator<?> emulator;
     private final String outPutPath;
     private final RegisterContext registerContext;
-    private final Module module;
     private final int arg_len;
     private final int windowSize;
     private final boolean showRets;
     private final Map<Long, Integer> callCounter = new HashMap<>();
 
-    public TraceFunction(Emulator<?> emulator, Module module, String outPutPath) {
+    public TraceFunction(Emulator<?> emulator, String outPutPath) {
         this.emulator = emulator;
-        this.module = module;
         this.outPutPath = outPutPath;
         this.windowSize = 80;
         this.registerContext = emulator.getContext();
@@ -36,9 +34,8 @@ public class TraceFunction {
         trace_function();
     }
 
-    public TraceFunction(Emulator<?> emulator, Module module, String outPutPath, int arg_len) {
+    public TraceFunction(Emulator<?> emulator, String outPutPath, int arg_len) {
         this.emulator = emulator;
-        this.module = module;
         this.outPutPath = outPutPath;
         this.windowSize = 80;
         this.registerContext = emulator.getContext();
@@ -47,9 +44,8 @@ public class TraceFunction {
         trace_function();
     }
 
-    public TraceFunction(Emulator<?> emulator, Module module, String outPutPath, boolean showRets) {
+    public TraceFunction(Emulator<?> emulator, String outPutPath, boolean showRets) {
         this.emulator = emulator;
-        this.module = module;
         this.outPutPath = outPutPath;
         this.windowSize = 80;
         this.registerContext = emulator.getContext();
@@ -58,9 +54,8 @@ public class TraceFunction {
         trace_function();
     }
 
-    public TraceFunction(Emulator<?> emulator, Module module, String outPutPath, int arg_len, boolean showRets) {
+    public TraceFunction(Emulator<?> emulator, String outPutPath, int arg_len, boolean showRets) {
         this.emulator = emulator;
-        this.module = module;
         this.outPutPath = outPutPath;
         this.windowSize = 80;
         this.registerContext = emulator.getContext();
@@ -69,9 +64,8 @@ public class TraceFunction {
         trace_function();
     }
 
-    public TraceFunction(Emulator<?> emulator, Module module, String outPutPath, int arg_len, boolean showRets, int windowSize) {
+    public TraceFunction(Emulator<?> emulator, String outPutPath, int arg_len, boolean showRets, int windowSize) {
         this.emulator = emulator;
-        this.module = module;
         this.outPutPath = outPutPath;
         this.windowSize = windowSize;
         this.registerContext = emulator.getContext();
@@ -104,6 +98,7 @@ public class TraceFunction {
                     while (pcString.length() < 59) {
                         pcString.append(" ");
                     }
+                    Module module= emulator.getMemory().findModuleByAddress(functionAddress);
                     pcString.append("sub: 0x" + Long.toHexString(functionAddress - module.base));
                     pcString.append(" [call count: ").append(callCount).append("]"); // 添加调用次数
                     writeFuncToFile(pcString + "\n");
@@ -130,6 +125,7 @@ public class TraceFunction {
                         while (pcString.length() < 59) {
                             pcString.append(" ");
                         }
+                        Module module= emulator.getMemory().findModuleByAddress(functionAddress);
                         pcString.append("call_by: 0x" + Long.toHexString(functionAddress - module.base));
                         writeFuncToFile(pcString + "\n");
                         if (args != null && args.length > 0) {
