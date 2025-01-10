@@ -10,11 +10,21 @@
 * java不是很熟练，有不合理的地方，请自行修改源码
 
 
+### 更新
+* 参数注释说明（ 类名下
+* 函数调用过滤，防止函数调用次数过多，导致日志太多，trace效率极低
+
 ## 用法
 ### 在unidbg初始化时加入
 ``` text
 new TraceFunction(emulator, module, savePath);
 ```
+## 更新
+### 加了过滤
+![img_4.png](img_4.png)
+### 完整日志
+![img_5.png](img_5.png)
+
 ## 效果
 ![img_1.png](img_1.png)
 

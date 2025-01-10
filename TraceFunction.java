@@ -16,14 +16,24 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TraceFunction {
+    /*
+        outPutPath: 日志文件保存路径
+        arg_len: 打印入参个数
+        windowSize: 读取内存大小（ 自己可以尝试加入偏移，可能会有惊喜
+        showRets: 显示函数返回值
+        callCounter: 函数计数器
+        functionTimes: 函数调用次数阈值
+     */
     private final Emulator<?> emulator;
-    private final String outPutPath;
     private final RegisterContext registerContext;
     private final Module module;
-    private final int arg_len;
-    private final int windowSize;
-    private final boolean showRets;
-    private final Map<Long, Integer> callCounter = new HashMap<>();
+    private final String outPutPath;
+    private final int arg_len;  // 打印入参个数
+    private final int windowSize;  // 显示内存大小（自己可以尝试加入偏移，可能会有惊喜
+    private final boolean showRets;   // 显示函数返回值
+    private final Map<Long, Integer> callCounter = new HashMap<>(); // 函数计数器
+    private final int functionTimes;  // 函数调用次数阈值
+
 
     public TraceFunction(Emulator<?> emulator, Module module, String outPutPath) {
         this.emulator = emulator;
@@ -33,10 +43,23 @@ public class TraceFunction {
         this.registerContext = emulator.getContext();
         this.arg_len = 4;
         this.showRets = true;
+        this.functionTimes = 0;
         trace_function();
     }
 
-    public TraceFunction(Emulator<?> emulator, Module module, String outPutPath, int arg_len) {
+    public TraceFunction(Emulator<?> emulator, Module module, String outPutPath, int functionTimes) {
+        this.emulator = emulator;
+        this.module = module;
+        this.outPutPath = outPutPath;
+        this.windowSize = 80;
+        this.registerContext = emulator.getContext();
+        this.arg_len = 4;
+        this.showRets = true;
+        this.functionTimes = functionTimes;
+        trace_function();
+    }
+
+    public TraceFunction(Emulator<?> emulator, Module module, String outPutPath, int arg_len, int functionTimes) {
         this.emulator = emulator;
         this.module = module;
         this.outPutPath = outPutPath;
@@ -44,10 +67,11 @@ public class TraceFunction {
         this.registerContext = emulator.getContext();
         this.showRets = true;
         this.arg_len = arg_len;
+        this.functionTimes = functionTimes;
         trace_function();
     }
 
-    public TraceFunction(Emulator<?> emulator, Module module, String outPutPath, boolean showRets) {
+    public TraceFunction(Emulator<?> emulator, Module module, String outPutPath, boolean showRets, int functionTimes) {
         this.emulator = emulator;
         this.module = module;
         this.outPutPath = outPutPath;
@@ -55,10 +79,11 @@ public class TraceFunction {
         this.registerContext = emulator.getContext();
         this.showRets = showRets;
         this.arg_len = 4;
+        this.functionTimes = functionTimes;
         trace_function();
     }
 
-    public TraceFunction(Emulator<?> emulator, Module module, String outPutPath, int arg_len, boolean showRets) {
+    public TraceFunction(Emulator<?> emulator, Module module, String outPutPath, int arg_len, boolean showRets, int functionTimes) {
         this.emulator = emulator;
         this.module = module;
         this.outPutPath = outPutPath;
@@ -66,10 +91,11 @@ public class TraceFunction {
         this.registerContext = emulator.getContext();
         this.showRets = showRets;
         this.arg_len = arg_len;
+        this.functionTimes = functionTimes;
         trace_function();
     }
 
-    public TraceFunction(Emulator<?> emulator, Module module, String outPutPath, int arg_len, boolean showRets, int windowSize) {
+    public TraceFunction(Emulator<?> emulator, Module module, String outPutPath, int arg_len, boolean showRets, int windowSize, int functionTimes) {
         this.emulator = emulator;
         this.module = module;
         this.outPutPath = outPutPath;
@@ -77,6 +103,7 @@ public class TraceFunction {
         this.registerContext = emulator.getContext();
         this.showRets = showRets;
         this.arg_len = arg_len;
+        this.functionTimes = functionTimes;
         trace_function();
     }
 
@@ -85,8 +112,7 @@ public class TraceFunction {
         Debugger debugger = emulator.attach();
         PrintStream traceStream = null;
         try {
-            // 保存文件
-            traceStream = new PrintStream(new FileOutputStream(outPutPath, false));  // false 表示覆盖写入
+            traceStream = new PrintStream(new FileOutputStream(outPutPath, false));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -96,8 +122,9 @@ public class TraceFunction {
             @Override
             public void onCall(Emulator<?> emulator, long callerAddress, long functionAddress) {
                 try {
-                    callCounter.put(functionAddress, callCounter.getOrDefault(functionAddress, 0) + 1);
-                    int callCount = callCounter.get(functionAddress);
+                    int callCount = callCounter.getOrDefault(functionAddress, 0);
+                    if (functionTimes != 0 && callCount >= functionTimes) return;
+                    callCounter.put(functionAddress, ++callCount);
 
                     StringBuilder pcString = new StringBuilder("          ");
                     pcString.append(registerContext.getPCPointer().toString());
@@ -125,6 +152,9 @@ public class TraceFunction {
             public void postCall(Emulator<?> emulator, long callerAddress, long functionAddress, Number[] args) {
                 if (showRets) {
                     try {
+                        int callCount = callCounter.getOrDefault(functionAddress, 0);
+                        if (functionTimes != 0 && callCount >= functionTimes) return;
+
                         StringBuilder pcString = new StringBuilder("          ");
                         pcString.append(registerContext.getPCPointer().toString());
                         while (pcString.length() < 59) {
